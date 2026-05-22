@@ -1,0 +1,9 @@
+FROM oscarfonts/h2
+
+ENV H2_DATABASE=test
+ENV H2_USER=carlos
+ENV H2_PASSWORD=fiapcloud
+
+EXPOSE 1521
+
+COPY init.sql /docker-entrypoint-initdb.d/init.sql
