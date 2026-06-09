@@ -1,261 +1,238 @@
-# Pet CRUD - Java + H2 + Docker + Azure
+# Nexus Verde
 
-## Descrição do Projeto
+## Descrição da Solução
 
-Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para gerenciamento de pets.  
-A aplicação realiza operações CRUD utilizando banco de dados H2, containerização com Docker e execução em máquina virtual Azure Linux.
+O Nexus Verde é uma solução de monitoramento ambiental que utiliza Inteligência Artificial e minissatélites para identificar possíveis desmatamentos e queimadas em áreas florestais.
 
-A solução foi desenvolvida utilizando:
+A solução realiza o monitoramento contínuo de regiões estratégicas através de imagens capturadas por satélites. As imagens são analisadas automaticamente por algoritmos de IA, capazes de identificar alterações na vegetação e gerar alertas para órgãos responsáveis pela preservação ambiental.
 
-- Java 17
-- Spring Boot
-- Spring Data JPA
-- H2 Database
-- Docker
-- Azure Virtual Machine
-- Postman
-- H2 Console
+O sistema foi desenvolvido utilizando Java Spring Boot, banco de dados H2 e conteinerização com Docker, sendo implantado em uma Máquina Virtual Linux na Microsoft Azure.
 
 ---
 
 # Benefícios para o Negócio
 
-- Facilidade de implantação utilizando containers Docker
-- Ambiente padronizado e portátil
-- Redução de custos utilizando H2 Database
-- Facilidade de escalabilidade em nuvem Azure
-- Simplicidade para testes e desenvolvimento
-- API REST pronta para integração com sistemas externos
+* Monitoramento contínuo de áreas florestais.
+* Identificação rápida de queimadas e desmatamentos.
+* Redução do tempo de resposta para eventos ambientais.
+* Centralização dos alertas em uma única plataforma.
+* Escalabilidade através de containers Docker.
+* Facilidade de implantação em ambientes de nuvem.
 
 ---
 
-# Desenho Macro da Arquitetura
+# Arquitetura Macro
 
-```text
-                +------------------+
-                |     Postman      |
-                +------------------+
-                         |
-                         v
-                +------------------+
-                |   Spring Boot    |
-                |   java-h2-app    |
-                +------------------+
-                         |
-                         v
-                +------------------+
-                |    H2 Database   |
-                |     H2Sprint     |
-                +------------------+
-                         |
-                         v
-                +------------------+
-                | Docker Network   |
-                |  app-network     |
-                +------------------+
-                         |
-                         v
-                +------------------+
-                | Azure Linux VM   |
-                +------------------+
-```
----
+Azure Subscription
+→ Resource Group (rg-nexusverde)
+→ Virtual Network (vnet-nexusverde)
+→ Network Security Group (Portas 22, 8080 e 1521)
+→ Azure Linux VM (Ubuntu Server 22.04 LTS)
 
-# Rotas de Api
+Dentro da VM:
+
+Docker Engine
+├── Container Java Spring Boot (nexusverde-566022)
+└── Container H2 Database (h2-566022)
+
+Fluxo:
+
+Usuário/Postman
+→ API Spring Boot (porta 8080)
+→ Banco H2 (porta 1521)
 
 ---
 
-# GET /api/pets
+# Endpoints da API
+
+## Monitoramentos
+
+GET /api/monitoramentos
+
+GET /api/monitoramentos/{id}
+
+POST /api/monitoramentos
+
+PUT /api/monitoramentos/{id}
+
+DELETE /api/monitoramentos/{id}
+
+## Alertas
+
+GET /api/alertas
+
+GET /api/alertas/{id}
+
+POST /api/alertas
+
+PUT /api/alertas/{id}
+
+DELETE /api/alertas/{id}
 
 ---
 
-# GET /api/pets/{id}
+# How To - Instalação Completa
 
----
-
-# POST /api/pets
-
----
-
-# PUT /api/pets/{id}
-
----
-
-# DELETE /api/pets/{id}
-
----
-
-# Instalação da Solução - How To
+## 1. Clonar os repositórios
 
 ```bash
-# Clonar os repositórios
 cd ~
 
 git clone https://github.com/carlosguedesneto/docker-entrypoint-initdb.d.git
+
 git clone https://github.com/carlosguedesneto/java-devops.git
+```
 
-# =========================
-# CONFIGURAÇÃO DO H2
-# =========================
+## 2. Criar rede Docker
 
+```bash
+docker network create nexusverde-network
+```
+
+## 3. Criar volume persistente
+
+```bash
+docker volume create h2-566022-data
+```
+
+## 4. Construir imagem do Banco H2
+
+```bash
 cd ~/docker-entrypoint-initdb.d
 
-# Criar Dockerfile do H2
-nano Dockerfile.h2
+docker build -f Dockerfile.h2 -t h2-nexusverde .
 ```
 
-```dockerfile
-FROM oscarfonts/h2
-
-ENV H2_DATABASE=test
-ENV H2_USER=carlos
-ENV H2_PASSWORD=fiapcloud
-
-EXPOSE 1521
-
-COPY init.sql /docker-entrypoint-initdb.d/init.sql
-```
+## 5. Executar Container H2
 
 ```bash
-# Build da imagem H2
-docker build -f Dockerfile.h2 -t h2-sprint .
-
-# Criar volume e rede Docker
-docker volume create h2-data
-docker network create app-network
-
-# Executar container H2
-docker run --name H2Sprint -d \
---network app-network \
+docker run --name h2-566022 -d \
+--network nexusverde-network \
 -p 1521:1521 \
--v h2-data:/opt/h2-data \
-h2-sprint
+-v h2-566022-data:/opt/h2-data \
+h2-nexusverde
+```
 
-# Verificar logs do H2
-docker logs H2Sprint
+## 6. Construir imagem da Aplicação Java
 
-# =========================
-# CONFIGURAÇÃO DA API JAVA
-# =========================
-
+```bash
 cd ~/java-devops
 
-# Copiar init.sql para resources
-cp ~/docker-entrypoint-initdb.d/init.sql \
-src/main/resources/data.sql
-
-# Editar application.properties
-nano src/main/resources/application.properties
+docker build --no-cache -f Dockerfile.api -t nexusverde-api .
 ```
 
-```properties
-server.port=8080
-
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.datasource.username=carlos
-spring.datasource.password=fiapcloud
-spring.datasource.driver-class-name=org.h2.Driver
-
-spring.jpa.hibernate.ddl-auto=create
-spring.jpa.show-sql=true
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.properties.hibernate.format_sql=true
-
-spring.sql.init.mode=always
-spring.jpa.defer-datasource-initialization=true
-
-spring.h2.console.enabled=true
-spring.h2.console.settings.web-allow-others=true
-spring.h2.console.path=/h2-console
-
-logging.level.org.hibernate.SQL=DEBUG
-logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
-```
+## 7. Executar Container da Aplicação
 
 ```bash
-# Criar Dockerfile da API
-nano Dockerfile.api
-```
-
-```dockerfile
-FROM maven:3.9-eclipse-temurin-17 AS builder
-
-WORKDIR /app
-
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-FROM eclipse-temurin:17-jre
-
-RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
-
-WORKDIR /app
-
-COPY --from=builder /app/target/*.jar app.jar
-
-RUN chown appuser:appuser app.jar
-
-USER appuser
-
-EXPOSE 8080
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-```bash
-# Build da API Java
-docker build --no-cache -f Dockerfile.api -t java-h2-app .
-
-# Executar container da API
-docker run --name java-h2-app -d \
---network app-network \
+docker run --name nexusverde-566022 -d \
+--network nexusverde-network \
 -p 8080:8080 \
--e SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb \
--e SPRING_DATASOURCE_USERNAME=carlos \
--e SPRING_DATASOURCE_PASSWORD=fiapcloud \
-java-h2-app
+nexusverde-api
+```
 
-# =========================
-# TESTES
-# =========================
+## 8. Verificar Containers
 
-# Verificar containers
+```bash
 docker ps
-
-# Verificar logs
-docker logs java-h2-app
-
-# Confirmar usuário sem root
-docker exec java-h2-app whoami
-
-# Resultado esperado:
-# appuser
-
-# Testar API localmente
-curl http://localhost:8080/api/pets
 ```
+
+## 9. Visualizar Logs
+
+### Banco H2
+
+```bash
+docker logs h2-566022
+```
+
+### Aplicação Java
+
+```bash
+docker logs nexusverde-566022
+```
+
+## 10. Verificar usuário e diretórios
+
+### Banco
+
+```bash
+docker exec -it h2-566022 pwd
+
+docker exec -it h2-566022 ls -l
+
+docker exec -it h2-566022 whoami
+```
+
+### Aplicação
+
+```bash
+docker exec -it nexusverde-566022 pwd
+
+docker exec -it nexusverde-566022 ls -l
+
+docker exec -it nexusverde-566022 whoami
+```
+
+## 11. Testar API Externamente
+
+### Listar Monitoramentos
 
 ```http
-# POSTMAN
-
-GET http://IP_DA_VM:8080/api/pets
+GET http://IP_PUBLICO_DA_VM:8080/api/monitoramentos
 ```
+
+### Listar Alertas
 
 ```http
-# H2 CONSOLE
-
-http://IP_DA_VM:8080/h2-console
+GET http://IP_PUBLICO_DA_VM:8080/api/alertas
 ```
+
+## 12. Conectar ao Banco pelo DBeaver
+
+Driver:
 
 ```text
-JDBC URL: jdbc:h2:mem:testdb
-User Name: carlos
-Password: fiapcloud
+H2 Server
+```
+
+URL JDBC:
+
+```text
+jdbc:h2:tcp://IP_PUBLICO_DA_VM:1521/nexusverde
+```
+
+Usuário:
+
+```text
+carlos
+```
+
+Senha:
+
+```text
+fiapcloud
+```
+
+## 13. Executar Consultas SQL
+
+```sql
+SELECT * FROM MONITORAMENTOS;
 ```
 
 ```sql
-SELECT * FROM PETS;
+SELECT * FROM ALERTAS;
 ```
+
+---
+
+# Tecnologias Utilizadas
+
+* Java 17
+* Spring Boot 3
+* Spring Data JPA
+* Maven
+* H2 Database
+* Docker
+* Microsoft Azure
+* DBeaver
+* Postman
+
