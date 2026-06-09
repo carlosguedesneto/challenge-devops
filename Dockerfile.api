@@ -14,6 +14,9 @@ RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
 
 WORKDIR /app
 
+ENV SPRING_DATASOURCE_URL=jdbc:h2:tcp://h2-566022:1521/nexusverde
+ENV SPRING_DATASOURCE_USERNAME=carlos
+ENV SPRING_DATASOURCE_PASSWORD=fiapcloud
 
 COPY --from=builder /app/target/*.jar app.jar
 

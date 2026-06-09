@@ -2,7 +2,7 @@
 # chmod +x criacao.sh
 # sed -i 's/\r$//' criacao.sh
 # ./criacao.sh
-GRUPO=grupofeidmacalu
+GRUPO=nexusverde
 LOCATION=canadacentral
 USER=azureuser
 PASSWORD='Fiap@Cloud2026'

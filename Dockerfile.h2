@@ -1,6 +1,7 @@
 FROM oscarfonts/h2
 
-ENV H2_DATABASE=test
+ENV H2_OPTIONS=-ifNotExists
+ENV H2_DATABASE=nexusverde
 ENV H2_USER=carlos
 ENV H2_PASSWORD=fiapcloud
 
